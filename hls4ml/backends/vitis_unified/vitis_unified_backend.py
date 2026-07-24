@@ -110,6 +110,7 @@ class VitisUnifiedBackend(VitisBackend):
         in_stream_buf_size=128,
         out_stream_buf_size=128,
         axi_mode='axi_master',
+        xpfmPath=None,
         **_,
     ):
         supported_boards_path = os.path.join(os.path.dirname(__file__), 'supported_boards.json')
@@ -134,6 +135,8 @@ class VitisUnifiedBackend(VitisBackend):
         config['VitisUnifiedConfig']['Driver'] = driver
         config['VitisUnifiedConfig']['InputDtype'] = input_type  # float, double or ap_fixed<a,b>
         config['VitisUnifiedConfig']['OutputDtype'] = output_type  # float, double or ap_fixed<a,b>
+
+        config['VitisUnifiedConfig']['XPFMPath'] = xpfmPath
 
         if io_type != 'io_stream':
             raise Exception('io_type must be io_stream')

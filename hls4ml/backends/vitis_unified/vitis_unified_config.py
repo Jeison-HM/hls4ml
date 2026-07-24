@@ -7,13 +7,6 @@ class VitisUnifiedConfig:
         self.config = config.config
         self.board = self.config.get('VitisUnifiedConfig', {}).get('Board', 'zcu102')
         self.supported_boards = self._load_supported_boards()
-
-        if self.board not in self.supported_boards:
-            raise Exception(
-                f'Board "{self.board}" does not appear in supported_boards.json. '
-                f'Available boards: {list(self.supported_boards.keys())}'
-            )
-
         self.axi_mode = self.config['VitisUnifiedConfig']['axi_mode']
 
         if self.axi_mode not in ['axi_stream', 'axi_master']:
@@ -24,38 +17,56 @@ class VitisUnifiedConfig:
         # [platform]<-->[in_stream_buf_size]<-->[hls]<-->[out_stream_buf_size]<-->[platform]
         self.in_stream_buf_size = self.config['VitisUnifiedConfig']['in_stream_buf_size']
         self.out_stream_buf_size = self.config['VitisUnifiedConfig']['out_stream_buf_size']
-        # Platform is resolved from supported_boards.json based on board + axi_mode
-        board_info = self.supported_boards.get(self.board, {})
-        mode_config = board_info.get(self.axi_mode, {})
-        if not isinstance(mode_config, dict):
-            mode_config = {}
 
-        tcl_rel = mode_config.get('platform_generator_tcl') or (
-            board_info.get('platform_generator_tcl', {}).get(self.axi_mode)
-            if isinstance(board_info.get('platform_generator_tcl'), dict)
-            else board_info.get('platform_generator_tcl')
-        )
-
-        if tcl_rel:
-            out_rel = mode_config.get('platform_output') or board_info.get('platform_output', 'output/platform.xsa')
-            output_dir = config.get_output_dir()
-            workspace_root = os.path.join(output_dir, 'vitis_workspace')
-            tcl_path = tcl_rel if os.path.isabs(tcl_rel) else os.path.join(workspace_root, tcl_rel)
-            self._platform_generator_tcl = os.path.abspath(os.path.expanduser(tcl_path))
-            if not os.path.isabs(out_rel):
-                out_path = os.path.join(workspace_root, out_rel)
-            else:
-                out_path = out_rel
-            self._platform_output_path = os.path.abspath(out_path)
-            self._platform_path = self._platform_output_path
-        elif mode_config.get('platform_file') or (
-            board_info.get('platform_file') and board_info['platform_file'].get(self.axi_mode)
-        ):
-            self._platform_path = self._get_xpfm_path_from_board()
+        # Use custom path xpfm/xsa if specified
+        custom_xpfm = self.config.get('VitisUnifiedConfig', {}).get('XPFMPath')
+        if custom_xpfm:
+            custom_xpfm = os.path.abspath(os.path.expanduser(custom_xpfm))
+            if not os.path.exists(custom_xpfm):
+                raise Exception(f'Custom XPFM/XSA path does not exist: {custom_xpfm}')
+            self._platform_path = custom_xpfm
             self._platform_generator_tcl = None
             self._platform_output_path = None
         else:
-            raise Exception(f'Board "{self.board}" has no platform for axi_mode "{self.axi_mode}" in supported_boards.json.')
+            # Platform is resolved from supported_boards.json based on board + axi_mode
+            if self.board not in self.supported_boards:
+                raise Exception(
+                    f'Board "{self.board}" does not appear in supported_boards.json. '
+                    f'Available boards: {list(self.supported_boards.keys())}'
+                )
+            board_info = self.supported_boards.get(self.board, {})
+            mode_config = board_info.get(self.axi_mode, {})
+            if not isinstance(mode_config, dict):
+                mode_config = {}
+
+            tcl_rel = mode_config.get('platform_generator_tcl') or (
+                board_info.get('platform_generator_tcl', {}).get(self.axi_mode)
+                if isinstance(board_info.get('platform_generator_tcl'), dict)
+                else board_info.get('platform_generator_tcl')
+            )
+
+            if tcl_rel:
+                out_rel = mode_config.get('platform_output') or board_info.get('platform_output', 'output/platform.xsa')
+                output_dir = config.get_output_dir()
+                workspace_root = os.path.join(output_dir, 'vitis_workspace')
+                tcl_path = tcl_rel if os.path.isabs(tcl_rel) else os.path.join(workspace_root, tcl_rel)
+                self._platform_generator_tcl = os.path.abspath(os.path.expanduser(tcl_path))
+                if not os.path.isabs(out_rel):
+                    out_path = os.path.join(workspace_root, out_rel)
+                else:
+                    out_path = out_rel
+                self._platform_output_path = os.path.abspath(out_path)
+                self._platform_path = self._platform_output_path
+            elif mode_config.get('platform_file') or (
+                board_info.get('platform_file') and board_info['platform_file'].get(self.axi_mode)
+            ):
+                self._platform_path = self._get_xpfm_path_from_board()
+                self._platform_generator_tcl = None
+                self._platform_output_path = None
+            else:
+                raise Exception(
+                    f'Board "{self.board}" has no platform for axi_mode "{self.axi_mode}" in supported_boards.json.'
+                )
 
         self.driver = self.config['VitisUnifiedConfig']['Driver']
         assert self.driver == 'python', 'we currently only support python drivers'
