@@ -6,7 +6,10 @@ v++ -l -t hw --platform {PLATFORM_PATH} {KERNEL_XO} --config link_system.cfg -o 
 [ -f ../../export/system.hwh ] && rm -f ../../export/system.hwh
 
 xclbinutil --dump-section BITSTREAM:RAW:../../export/system.bit --input {PROJECT_NAME}.xclbin
-cp _x/link/vivado/vpl/prj/prj.gen/sources_1/bd/vitis_design/hw_handoff/vitis_design.hwh ../../export/system.hwh
+
+for hwh in _x/link/vivado/vpl/prj/prj.gen/sources_1/bd/*/hw_handoff/*.hwh; do
+    [ -f "$hwh" ] && cp "$hwh" ../../export/system.hwh && break
+done
 
 # Copy final reports (timing, clock, resource usage) to final_reports
 mkdir -p ../../final_reports
