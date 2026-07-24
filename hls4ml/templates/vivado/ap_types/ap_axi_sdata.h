@@ -27,7 +27,7 @@ struct ap_ufixed;
 namespace hls {
 
 template <typename T> constexpr std::size_t bitwidth = sizeof(T) * CHAR_BIT;
-template <> constexpr std::size_t bitwidth<void> = 1 * CHAR_BIT;
+template <> inline constexpr std::size_t bitwidth<void> = 1 * CHAR_BIT;
 
 template <std::size_t W> constexpr std::size_t bitwidth<ap_int<W>> = W;
 template <std::size_t W> constexpr std::size_t bitwidth<ap_uint<W>> = W;
@@ -40,7 +40,7 @@ constexpr std::size_t bitwidth<ap_ufixed<_AP_W, _AP_I, _AP_Q, _AP_O, _AP_N>> =
 
 template <typename T>
 constexpr std::size_t bytewidth = (bitwidth<T> + CHAR_BIT - 1) / CHAR_BIT;
-template <> constexpr std::size_t bytewidth<void> = 1;
+template <> inline constexpr std::size_t bytewidth<void> = 1;
 
 struct axis_disabled_signal {};
 
