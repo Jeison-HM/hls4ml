@@ -13,7 +13,6 @@
       "c_drivers": ""
     }
   },
-
   "kv260": {
     "part": "sk-kv260-g",
     "axi_master": {
@@ -28,6 +27,12 @@
       "python_driver": "axi_stream_driver.py",
       "c_drivers": ""
     }
+  },
+  "pynq-z2": {
+    "part": "xc7z020clg400-1",
+    "axi_stream": {
+      "python_driver": "axi_stream_driver.py",
+      "c_drivers": ""
+    }
   }
-
 }
